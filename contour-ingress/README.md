@@ -7,7 +7,7 @@ Before performing the procedures in this topic, you must have installed and conf
 - PKS v1.2+
 - NSX-T v2.3+
 - A PKS plan with at least 1 master and 2 worker nodes
-- Make sure that the k8s cluster is deployed with priviliged access. Deployment of nginx will fail otherwise
+- Make sure that the k8s cluster is deployed with priviliged access
 
 ## Overview
 
@@ -40,8 +40,8 @@ There are 4 files in the deployment folder
 ```
 $ kubectl get pods --all-namespaces -l app=contour
     NAMESPACE        NAME                       READY   STATUS    RESTARTS   AGE
-    heptio-contour   contour-86d66889d9-ftpw6   2/2     Running   0          5d23h
-    heptio-contour   contour-86d66889d9-kzljc   2/2     Running   0          5d23h
+    heptio-contour   contour-86d66889d9-l5rbd   2/2     Running   0          107s
+    heptio-contour   contour-86d66889d9-rvbl9   2/2     Running   0          107s
 ```
 The status of Contour PODs is `Running` which means the Contour was deployed susccessfully
 
@@ -52,9 +52,8 @@ Run the following command to get Contour's IP
 
 ```
 $ kubectl get -n heptio-contour service contour -o wide
-
     NAME      TYPE           CLUSTER-IP       EXTERNAL-IP               PORT(S)                      AGE     SELECTOR
-    contour   LoadBalancer   10.100.200.153   100.64.64.5,172.32.0.50   80:31311/TCP,443:30308/TCP   5d23h   app=contour
+    contour   LoadBalancer   10.100.200.100   100.64.64.5,172.32.0.50   80:30222/TCP,443:30468/TCP   2m29s   app=contour
 ```
 Note down the external IP of the ingress-nginx for your environment. In this case, the Contour ingress can be reached at `172.32.0.50` and is listening on port 80 and 443.
 
@@ -83,14 +82,12 @@ Note down the external IP of the ingress-nginx for your environment. In this cas
 4. Check the POD status to verify that cafe application deployed successfully
     ```
     $ kubectl get pods
-
-        NAME                                        READY     STATUS    RESTARTS   AGE
-        coffee-56668d6f78-rzj27                     1/1       Running   0          2m46s
-        coffee-56668d6f78-wxvvv                     1/1       Running   0          2m46s
-        nginx-ingress-controller-56c5c48c4d-b4hsp   1/1       Running   0          18h
-        tea-85f8bf86fd-bskzx                        1/1       Running   0          2m46s
-        tea-85f8bf86fd-wcmqx                        1/1       Running   0          2m46s
-        tea-85f8bf86fd-xw68j                        1/1       Running   0          2m46s
+        NAME                      READY   STATUS    RESTARTS   AGE
+        coffee-56668d6f78-lrj4b   1/1     Running   0          49s
+        coffee-56668d6f78-q592g   1/1     Running   0          49s
+        tea-85f8bf86fd-959fl      1/1     Running   0          49s
+        tea-85f8bf86fd-qxzhd      1/1     Running   0          49s
+        tea-85f8bf86fd-v2hqj      1/1     Running   0          49s
     ```
     All pods are showing `Running` which shows that cafe application was deployed successfully
 
@@ -107,53 +104,53 @@ The following commands will test the connectivity externally to verify that our 
 
 2. Test the coffe PODs
 
-    Issue the command below to curl your PODs. Note that there is coffee in the url which nginx controller is using to direct traffic to the coffee backend PODs. Issuing the command multiple time round robins the request to the 2 coffee backend PODs as defined in cafe.yaml. The "Server address" field in the curl output identifies the backend POD fullfilling the request
+    Issue the command below to curl your PODs. Note that there is coffee in the url which nginx controller is using to direct traffic to the coffee backend PODs. Issuing the command multiple time round robins the request to the 2 coffee backend PODs as defined in cafe.yaml. The `Server address` field in the curl output identifies the backend POD fullfilling the request
 
     ```
     $ curl --resolve cafe.lab.local:$IC_HTTPS_PORT:$IC_IP https://cafe.lab.local:$IC_HTTPS_PORT/coffee --insecure
-    Server address: 172.25.3.8:80
-    Server name: coffee-56668d6f78-wxvvv
-    Date: 15/Mar/2019:19:05:54 +0000
+    Server address: 172.28.5.3:80
+    Server name: coffee-56668d6f78-lrj4b
+    Date: 28/Mar/2019:19:50:04 +0000
     URI: /coffee
-    Request ID: 242a10438ab9cc8c93b531db656e9b01
+    Request ID: e9f873fcd53e1e6003265c3b872495bb
     
     $ curl --resolve cafe.lab.local:$IC_HTTPS_PORT:$IC_IP https://cafe.lab.local:$IC_HTTPS_PORT/coffee --insecure
-    Server address: 172.25.3.9:80
-    Server name: coffee-56668d6f78-rzj27
-    Date: 15/Mar/2019:19:05:55 +0000
+    Server address: 172.28.5.2:80
+    Server name: coffee-56668d6f78-q592g
+    Date: 28/Mar/2019:19:50:40 +0000
     URI: /coffee
-    Request ID: 6d8bafb54e5c7a1c495e0790516cfa88
+    Request ID: 16fa6f2dbc659ddd6bbf6b4fdfe2bbc0
     ```
     
 
 3. Test the tea PODs
 
-    The cafe.yaml file deployed 3 replicas of the tea POD so issuing the curl command multiple time distributes the request on these 3 PODs. This can be verified using the "Server address" field in the outputs below.
+    The cafe.yaml file deployed 3 replicas of the tea POD so issuing the curl command multiple time distributes the request on these 3 PODs. This can be verified using the `Server address` field in the outputs below.
 
     ```
     $ curl --resolve cafe.lab.local:$IC_HTTPS_PORT:$IC_IP https://cafe.lab.local:$IC_HTTPS_PORT/tea --insecure
-    Server address: 172.25.3.10:80
-    Server name: tea-85f8bf86fd-bskzx
-    Date: 15/Mar/2019:19:12:23 +0000
+    Server address: 172.28.5.4:80
+    Server name: tea-85f8bf86fd-v2hqj
+    Date: 28/Mar/2019:19:51:45 +0000
     URI: /tea
-    Request ID: e3ca80b2254fc47a96735b99615ebfb4
+    Request ID: aa380175548d98dfccedafa83ad71a70
     
     $ curl --resolve cafe.lab.local:$IC_HTTPS_PORT:$IC_IP https://cafe.lab.local:$IC_HTTPS_PORT/tea --insecure
-    Server address: 172.25.3.11:80
-    Server name: tea-85f8bf86fd-wcmqx
-    Date: 15/Mar/2019:19:12:24 +0000
+    Server address: 172.28.5.6:80
+    Server name: tea-85f8bf86fd-959fl
+    Date: 28/Mar/2019:19:51:47 +0000
     URI: /tea
-    Request ID: 546e2deb5e6dc0f11cc677e21b764976
+    Request ID: d1f953d554e14aac087c5df5cbe67bfd
     
     $ curl --resolve cafe.lab.local:$IC_HTTPS_PORT:$IC_IP https://cafe.lab.local:$IC_HTTPS_PORT/tea --insecure
-    Server address: 172.25.3.12:80
-    Server name: tea-85f8bf86fd-xw68j
-    Date: 15/Mar/2019:19:12:25 +0000
+    Server address: 172.28.5.5:80
+    Server name: tea-85f8bf86fd-qxzhd
+    Date: 28/Mar/2019:19:51:48 +0000
     URI: /tea
-    Request ID: ef81fc9439705a2990d3984ec0a0464e
+    Request ID: 605d1cebbf6697f1584c656cdd65ba6d
     ```
 
-    Alternatively, a DNS entry can be added for cafe.lab.local(hostname used in my environment) to map to 172.26.80.100 to access the url directly from the browser.
+    Alternatively, a DNS entry can be added for cafe.lab.local(hostname used in my environment) to map to 172.32.0.50 to access the url directly from the browser.
 
 
 References:
